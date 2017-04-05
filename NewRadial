@@ -1,0 +1,52 @@
+#!/bin/bash
+
+## Parameters...
+## $1 is Full POSIX Path of new Radial File
+thePath=$1
+## Get the filename without the folder path
+theFile=${thePath##*/}
+## Get the filename without the extension
+theName=${theFile%%.*}
+
+## This will show in the AnalyzeSpectra window
+echo "Now adding the disk space to Radial file $thePath"
+
+## Change field separator to newline
+IFS=$'\n'
+
+## This is the line in the file where disk information will go
+lineNumber=3
+
+## set counter
+counter=1
+
+## if this is the final radial than insert disk space info
+## will do it for both Ideal and Measured radial files
+## If you want this to only run on Measured pattern you can change line below to
+# if [ $2 = "Meas" ] && [ $3 = "Final" ] ; then
+
+if [ $3 = "Final" ] ; then
+  for line in $(df -ml|tail +2)
+  do
+#cut out inodes
+    lineCut=`echo $line|tr -s [:blank:]|cut -f1-5,9- -d' '`
+
+#set line
+    if [[ $counter == 1 ]]; then
+      nline="%DISK$counter: $lineCut"
+    else
+      nline="$nline\n%DISK$counter: $lineCut"
+    fi
+
+# update counter
+    let counter=counter+1
+  done
+
+#input $nline into file
+awk -v n=$lineNumber 'NR==n {print "'$nline'"} {print}' $thePath > /tmp/$theName.tmp
+mv /tmp/$theName.tmp $thePath
+fi
+
+##
+## End of Script
+##
